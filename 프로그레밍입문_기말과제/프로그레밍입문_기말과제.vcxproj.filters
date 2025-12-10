@@ -32,5 +32,11 @@
     <ClInclude Include="memory.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="func.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="eval.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

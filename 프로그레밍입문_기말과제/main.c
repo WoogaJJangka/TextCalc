@@ -1,84 +1,80 @@
-/* main.c */
+#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
 #include "memory.h"
+#include "eval.h"
+#include "func.h"
 
-#define LINE_MAX 256
-
-int main(void) {
-    char line[LINE_MAX];
+int main() {
+    char input[256];
 
     init_memory();
 
+    printf("=== VS C-Calculator ===\n");
+    printf("Commands: set <var> <val>, print, del <var>, exit\n");
+    printf("Examples: 3 + 5, sin 30, x * 2\n\n");
+
     while (1) {
         printf(":> ");
-        if (fgets(line, sizeof(line), stdin) == NULL) {
-            break; // EOF
-        }
 
-        // 줄 끝 개행 제거
-        line[strcspn(line, "\r\n")] = '\0';
-
-        if (line[0] == '\0') {
-            continue;
-        }
-
-        // 간단한 종료 명령 예시
-        if (strcmp(line, "exit") == 0) {
-            break;
-        }
-
-        // 첫 토큰으로 명령 구분
-        char* cmd = strtok(line, " ");
-        if (cmd == NULL) continue;
-
-        if (strcmp(cmd, "set") == 0) {
-            // 형식: set 이름 = 값   (일단 10진수 값만)
-            char* name = strtok(NULL, " ");
-            char* eq = strtok(NULL, " ");
-            char* val = strtok(NULL, " ");
-
-            if (!name || !eq || !val || strcmp(eq, "=") != 0) {
-                printf("syntax error\n");
-                continue;
+        // 입력이 비정상이면 요류 출력 및 종
+        if (fgets(input, sizeof(input), stdin) == NULL) {
+            if (feof(stdin)) {
+                // EOF(예: Ctrl+D 또는 입력 스트림 종료)
+                fprintf(stderr, "종료: 입력 스트림의 끝(EOF) 감지\n");
+                return 0;
             }
-
-            int v = atoi(val);  // 추후: 진법 파싱 함수로 교체
-            if (set_var(name, v) != 0) {
-                printf("command error\n"); // 예: 메모리 풀
-            }
-
-        }
-        else if (strcmp(cmd, "print") == 0) {
-            // print a / print all / print ret
-            char* arg = strtok(NULL, " ");
-            if (!arg) {
-                printf("syntax error\n");
-                continue;
-            }
-            if (strcmp(arg, "all") == 0) {
-                print_all();
+            else if (ferror(stdin)) {
+                // 읽기 오류가 발생한 경우 자세한 원인 출력
+                perror("입력 오류");
+                return 1;
             }
             else {
-                print_var(arg);
+                // 일반적이지 않은 NULL 반환의 경우
+                fprintf(stderr, "알 수 없는 입력 오류로 종료\n");
+                return 1;
             }
-
         }
-        else if (strcmp(cmd, "del") == 0) {
-            char* name = strtok(NULL, " ");
-            if (!name) {
-                printf("syntax error\n");
-                continue;
-            }
-            if (del_var(name) != 0) {
-                printf("not define variable\n");
-            }
 
+        // 개행 문자(\n) 제거
+        size_t len = strlen(input);
+        if (len > 0 && input[len - 1] == '\n') {
+            input[len - 1] = '\0';
+        }
+
+        if (strlen(input) == 0) continue;
+
+        // 명령어 처리를 위해 복사본 생성 (strtok가 원본을 훼손하므로)
+        char cmd_buf[256];
+        strcpy_s(cmd_buf, sizeof(cmd_buf), input);
+
+        // 첫 번째 토큰 확인 (set, print, exit 등)
+        char* token = strtok(cmd_buf, " ");
+
+        if (token == NULL) continue;
+
+        if (strcmp(token, "exit") == 0) {
+            break;
+        }
+        else if (strcmp(token, "print") == 0) {
+            print_all_vars();
+        }
+        else if (strcmp(token, "set") == 0) {
+            char* var = strtok(NULL, " ");
+            char* val_str = strtok(NULL, " ");
+            if (var && val_str) {
+                set_var(var, atof(val_str));
+                printf("Set %s = %s\n", var, val_str);
+            }
+            else {
+                printf("Usage: set <var> <value>\n");
+            }
         }
         else {
-            // 앞으로 이 부분에: 이항 연산 / 함수 호출 파싱을 넣을 예정
-            printf("command error\n");
+            // 명령어가 아니면 수식으로 간주하고 전체 문자열을 eval로 넘김
+            double result = evaluate(input);
+            set_ret(result);
+            printf("= %.6g\n", result);
         }
     }
 
