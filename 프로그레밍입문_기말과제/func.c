@@ -5,22 +5,44 @@
 #include <stdlib.h>
 #include <time.h>
 
-#ifndef M_PI
 #define M_PI 3.14159265358979323846
-#endif
+
+// Convert degrees to radians
+static double deg2rad(int deg) {
+    return (double)deg * M_PI / 180.0;
+}
+
+// Normalize degree to [0,359]
+static int norm_deg(int deg) {
+    int r = deg % 360;
+    if (r < 0) r += 360;
+    return r;
+}
+
+// Integer sin for degree input: compute and round for all angles
+static int sin_deg(int deg) {
+    int d = norm_deg(deg);
+    double r = sin(deg2rad(d));
+    return (int)round(r); // round to nearest integer (portable on Windows)
+}
+
+// Integer cos for degree input: compute and round for all angles
+static int cos_deg(int deg) {
+    int d = norm_deg(deg);
+    double r = cos(deg2rad(d));
+    return (int)round(r);
+}
 
 int do_func(const char* func_name, int val) {
     if (strcmp(func_name, "sin") == 0) {
-        double rad = (double)val * M_PI / 180.0;
-        return (int)lround(sin(rad));
+        return sin_deg(val);
     }
     if (strcmp(func_name, "cos") == 0) {
-        double rad = (double)val * M_PI / 180.0;
-        return (int)lround(cos(rad));
+        return cos_deg(val);
     }
     if (strcmp(func_name, "sqrt") == 0) {
         if (val < 0) { printf("Error: Domain error.\n"); return 0; }
-        return (int)floor(sqrt((double)val));
+        return (int)round(sqrt((double)val));
     }
     if (strcmp(func_name, "abs") == 0) return abs(val);
     if (strcmp(func_name, "int") == 0) return val;
