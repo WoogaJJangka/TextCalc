@@ -12,7 +12,7 @@ void init_memory() {
 }
 
 void set_var(const char* name, int value) {
-	// 기존 변수 업데이트
+    // 기존 변수 업데이트
     for (int i = 0; i < var_count; i++) {
         if (strcmp(vars[i].name, name) == 0) {
             vars[i].value = value;
@@ -22,8 +22,12 @@ void set_var(const char* name, int value) {
 
     // 새 변수 추가
     if (var_count < MAX_VARS) {
-        // strcpy_s(목적지, 목적지버퍼크기, 원본);
-        strcpy_s(vars[var_count].name, sizeof(vars[var_count].name), name);
+        // 이름은 최대 VAR_NAME_LEN-1 까지 안전하게 복사
+        size_t j;
+        for (j = 0; j < (size_t)(VAR_NAME_LEN - 1) && name[j] != '\0'; j++) {
+            vars[var_count].name[j] = name[j];
+        }
+        vars[var_count].name[j] = '\0';
         vars[var_count].value = value;
         var_count++;
     }
@@ -40,8 +44,24 @@ int get_var(const char* name) {
             return vars[i].value;
         }
     }
-    printf("Error: Undefined variable '%s'. Returning 0.\n", name);
+    printf("not define variable\n");
     return 0;
+}
+
+void del_var(const char* name) {
+    // 변수 찾기
+    for (int i = 0; i < var_count; i++) {
+        if (strcmp(vars[i].name, name) == 0) {
+            // 뒤의 항목을 앞으로 당겨 덮어쓰기
+            for (int j = i; j < var_count - 1; j++) {
+                vars[j] = vars[j + 1];
+                printf("variable %s deleted\n",vars[i].name);
+            }
+            var_count--;
+            return;
+        }
+    }
+    printf("not define variable\n");
 }
 
 void print_all_vars() {
@@ -66,5 +86,5 @@ int is_existing_var(const char* name) {
     for (int i = 0; i < var_count; i++) {
         if (strcmp(vars[i].name, name) == 0) return 1;
     }
-    return 0;// 사용할 수 있는 변수
+    return 0; // 사용할 수 있는 변수
 }
